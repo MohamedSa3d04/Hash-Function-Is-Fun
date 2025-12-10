@@ -33,6 +33,9 @@ class Phone_Contact:
         self.length = length_contacts # Maximum Number Of Contacts
         self.table = [None] * length_contacts
 
+        self.load_factor_limit = 0.75 # Default of Java (n_string / table_size)
+        self.added = 0
+
 
     # Let's hasing 
     def __setitem__(self, name, phone_number):
@@ -40,10 +43,44 @@ class Phone_Contact:
         print(f'IDX [{idx}] FOR {name}')
         
         if self.table[idx]: # Collision
+            # check if the same name -> reassign
+            cur_node = self.table[idx].head
+            while cur_node:
+                name_in_list, _ = cur_node.val
+                if name_in_list == name:
+                    # Update instead of adding another entry
+                    cur_node.val = (name, phone_number)
+                    return
+                cur_node = cur_node.next
             self.table[idx].append((name, phone_number))
 
         else:
             self.table[idx] = Linked_List((name, phone_number))
+
+        self.added += 1
+        # Check If we exceed the load_factor thresold or not
+        if self.added / self.length >= self.load_factor_limit:
+            self.rehashing()
+         
+    def rehashing(self):
+        new_length = self.length * 2
+        bigger_contact = Phone_Contact(new_length)
+
+        added_contact = filter(lambda bucket: bucket, self.table)
+        for list_info in added_contact:
+            cur_node = list_info.head
+            while cur_node:
+                name_in_list, phone = cur_node.val
+                bigger_contact[name_in_list] = phone           
+                cur_node = cur_node.next
+
+        # Copy new structure into self
+        self.length = bigger_contact.length
+        self.table = bigger_contact.table
+        self.added = bigger_contact.added
+        print("Done Rehashing!!")
+
+
 
     def __getitem__(self, name):
         idx = hash(name) % self.length
@@ -69,7 +106,10 @@ my_contact = Phone_Contact(2)
 my_contact['Mohamed'] = 1063557194
 my_contact['Ahmed'] = 323134
 my_contact['Kareem'] = 31114
+my_contact['Mona'] = 33331
+my_contact['Rami'] = 3212
 
+print(my_contact.length, len(my_contact.table))
 print(my_contact['Kareem']) 
 print(my_contact['Mohamed'])
 print(my_contact['Ahmed'])
